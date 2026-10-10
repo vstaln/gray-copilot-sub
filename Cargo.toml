@@ -1,0 +1,21 @@
+[package]
+name = "gray-copilot-sub"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "GitHub Copilot subscription provider sidecar plugin for the gray agent harness"
+license = "MIT"
+
+[lib]
+name = "copilot_sub"
+path = "src/lib.rs"
+
+[[bin]]
+name = "copilot-sub"
+path = "src/main.rs"
+
+[dependencies]
+gray-acp-bridge = { path = "../gray-acp-bridge" }
+gray-openai-compat = { path = "../gray-openai-compat" }
+serde_json = { version = "1", features = ["preserve_order"] }
+ureq = { version = "2", features = ["json"] }
