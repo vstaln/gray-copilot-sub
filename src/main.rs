@@ -98,7 +98,13 @@ fn http_json(method: &str, url: &str, body: Option<&Value>, headers: &[(String, 
         Ok(r) => r.into_json().map_err(|e| format!("JSON decode {url}: {e}")),
         Err(ureq::Error::Status(code, r)) => {
             let mut t = r.into_string().unwrap_or_default();
-            if t.len() > 400 { t.truncate(400); }
+            if t.len() > 400 {
+                let mut end = 400;
+                while !t.is_char_boundary(end) {
+                    end -= 1;
+                }
+                t.truncate(end);
+            }
             Err(format!("HTTP {code} {url}: {t}"))
         }
         Err(e) => Err(format!("{e}")),
