@@ -19,45 +19,81 @@
 gray plugin install copilot
 ```
 
-`gray-copilot-sub` turns an existing **GitHub Copilot subscription** into a
-gray provider. GitHub's OAuth device flow gets you in; the plugin mints
-short-lived Copilot session tokens on demand and relays chat through
-`https://api.githubcopilot.net/chat/completions`.
+`gray-copilot-sub` runs your **GitHub Copilot subscription** through the
+official **GitHub Copilot CLI**. The plugin starts `copilot --acp --stdio`, the
+CLI's documented [Agent Client Protocol](https://docs.github.com/en/copilot/reference/copilot-cli-reference/acp-server)
+server, and relays gray chat turns to it. The CLI does the sign-in and all
+model traffic. The ACP server is in public preview and may change.
 
-## Auth
+## Requirements
+
+- GitHub Copilot CLI on `PATH` (npm package `@github/copilot`), or set
+  `GRAY_COPILOT_SUB_COMMAND=/path/to/copilot`.
+- Signed in with the CLI: run `copilot login` in a terminal (or `/login` inside
+  Copilot CLI). The CLI stores its token in the OS keychain, or in
+  `~/.copilot/config.json` when no keychain is available.
+
+## What the plugin does and does not do
+
+- **Reads no tokens.** It does not open the CLI's keychain entry or
+  `~/.copilot/config.json`. It does not read `GH_TOKEN` / `GITHUB_TOKEN`,
+  and it does not run its own OAuth or device login. `copilot login` runs
+  only in your terminal.
+- **Calls no internal endpoints.** Every request goes through the official
+  `copilot --acp` process. The plugin never calls `api.githubcopilot.net`
+  or `api.github.com/copilot_internal`.
+- **Sends no spoofed client identity.** It sends no editor headers and
+  does not pose as VS Code or Copilot Chat.
+- **Keeps the model inert.** The CLI's built-in tools (shell, file edit and
+  read, web fetch, subagents, and `ask_user`) are excluded at server start with
+  `--excluded-tools=…` and `--no-ask-user`. Any permission request the CLI
+  still raises is refused, except for gray's own `mcp__gray__*` tools.
+  `COPILOT_ALLOW_ALL` is forced to `false` for the child.
+- **Lists models from the CLI.** Models come from the ACP `session/new`
+  response. `GRAY_COPILOT_SUB_MODELS` is an explicit fallback. Nothing is
+  hardcoded.
+- **Reports no quota.** The CLI publishes no usage counter over ACP, so the
+  usage card shows connection status only.
+
+## Commands
 
 ```sh
-copilot-sub login     # device flow: prints a code + github.com/login/device
-copilot-sub status    # oauth token + session-token state
-copilot-sub logout    # revoke locally
+copilot-sub status    # CLI path and version, sign-in state, legacy-file notice
+copilot-sub models    # models the CLI reports
+copilot-sub login     # prints the command to run (does not sign in itself)
+copilot-sub logout    # prints the sign-out instruction (/logout in Copilot CLI)
 ```
 
-GitHub device flow: the plugin prints a one-time code and the verification
-URL — paste the code, authorize, and the OAuth token lands in
-`~/.gray/copilot/config.json` (0600). Copilot session tokens
-(~30 min TTL) are minted from it per need, never stored long-term, and
-never logged.
+Inside gray: `/copilot status`.
 
-The same flow is exposed through `provider/auth/*` so the host can drive
-login interactively; `refresh`/`revoke` answer honestly (`unsupported`
-where Copilot's API has no equivalent).
+## Environment
 
-## Models
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `GRAY_COPILOT_SUB_COMMAND` | `copilot` on `PATH` | Binary override |
+| `GRAY_COPILOT_SUB_MODELS` | unset | Comma-separated model ids, used only when the CLI reports none |
 
-`copilot-sub models` lists what your Copilot entitlement exposes
-(`api.githubcopilot.net/models`) — typically the GPT-4o / GPT-5 family and
-friends. The catalog is fetched live, not pinned.
+## Legacy login (upgrade notice)
 
-## How it works
+Versions before 0.1.1 ran their own GitHub device login with a VS Code client
+ID and stored the resulting token in `~/.gray/copilot/config.json`. That
+approach impersonated VS Code, so it is retired. The current version never
+reads that file. `copilot-sub status` reports it while it is present. Delete the
+file yourself, and remove the GitHub OAuth authorization you granted for that
+login. Nothing is deleted automatically.
 
-Same shared relay stack as the other `*-sub` providers: the host POSTs an
-OpenAI-Responses request to a per-turn loopback relay; the plugin
-translates to Copilot's chat-completions shape, attaches the session
-token, and folds the answer back into a Responses SSE stream.
+## Verification status
+
+The tests use a fake `copilot --acp` (a Python stand-in) over the real ACP
+transport, because the Copilot CLI was not installed when this was built. The
+exact auth-error text and the `session/new` models shape of the real CLI are
+therefore not verified. Run `copilot-sub status` and `copilot-sub models` against
+the real CLI before relying on it.
 
 ## Build from source
 
 ```sh
+cargo test
 cargo build --release
 gray plugin check ./target/release/copilot-sub
 ```
