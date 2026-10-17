@@ -52,6 +52,7 @@ enum RpcError {
     Protocol(String),
     Unavailable(String),
     Rpc { code: &'static str, message: String },
+    JsonRpc { code: i64, message: String },
 }
 
 fn unavailable(msg: impl Into<String>) -> RpcError {
@@ -60,6 +61,9 @@ fn unavailable(msg: impl Into<String>) -> RpcError {
 
 fn error_value(e: &RpcError) -> Value {
     match e {
+        RpcError::JsonRpc { code, message } => json!({
+            "code": code, "message": message,
+        }),
         RpcError::Rpc { code, message } => json!({
             "code": code, "message": message, "retryable": false, "terminal": true,
         }),
@@ -283,7 +287,10 @@ fn dispatch(
         "command/run" => command_run(params),
         "plugin/tools" => Ok(json!({"tools": []})),
         "event/notify" | "plugin/shutdown" => Ok(json!({})),
-        other => Err(RpcError::Protocol(format!("method not found: {other}"))),
+        other => Err(RpcError::JsonRpc {
+            code: -32601,
+            message: format!("method not found: {other}"),
+        }),
     }
 }
 
