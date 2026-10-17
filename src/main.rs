@@ -222,6 +222,7 @@ fn help_text() -> String {
 
 fn status_text() -> String {
     let cli = match setup::resolve_command() {
+        Some(bin) if !std::path::Path::new(&bin).is_file() => format!("{bin} (not found)"),
         Some(bin) => match setup::cli_version() {
             Some(v) => format!("{bin} ({v})"),
             None => bin,
