@@ -8,7 +8,7 @@
 //! internal endpoint, and never sends an editor identity it does not own.
 
 use std::io::{BufRead, IsTerminal, Write};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -160,6 +160,8 @@ fn provider_models(_params: &Value) -> Result<Value, RpcError> {
     }))
 }
 
+static SIGN_IN_VERIFIED: AtomicBool = AtomicBool::new(false);
+
 fn provider_chat(intents: &Intents, pool: &Arc<Pool>, params: &Value) -> Result<Value, RpcError> {
     let provider = params
         .get("provider")
@@ -170,6 +172,18 @@ fn provider_chat(intents: &Intents, pool: &Arc<Pool>, params: &Value) -> Result<
     }
     if setup::resolve_command().is_none() {
         return Err(unavailable(setup::INSTALL_HINT));
+    }
+    if !SIGN_IN_VERIFIED.load(Ordering::Relaxed) {
+        match models::probe() {
+            Probe::Ready(_) => SIGN_IN_VERIFIED.store(true, Ordering::Relaxed),
+            Probe::NotSignedIn(_) => {
+                return Err(RpcError::Rpc {
+                    code: "invalid_grant",
+                    message: setup::LOGIN_HINT.into(),
+                });
+            }
+            other => return Err(probe_error(other)),
+        }
     }
     let model = params
         .get("model")
