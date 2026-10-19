@@ -108,7 +108,7 @@ pub fn cli_version() -> Option<String> {
 fn state_dir() -> PathBuf {
     let home = std::env::var_os("GRAY_HOME")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".gray")))
+        .or_else(|| std::env::home_dir().map(|h| h.join(".gray")))
         .unwrap_or_else(|| PathBuf::from("."));
     home.join("copilot")
 }
