@@ -1,6 +1,6 @@
 [package]
 name = "gray-copilot-sub"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.88"
 description = "GitHub Copilot provider sidecar for gray: drives the official Copilot CLI over ACP"
