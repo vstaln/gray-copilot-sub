@@ -41,6 +41,7 @@ fn manifest() -> Value {
             &["login", "refresh", "revoke", "models", "chat"], 0,
         )],
         "commands": ["/copilot"],
+        "command_descriptions": {"/copilot": "show Copilot CLI status and models"},
         "subcommands": ["copilot"],
     })
 }
