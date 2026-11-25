@@ -2,8 +2,8 @@
 //! `initialize` + `session/new` against a throwaway `copilot --acp` child.
 //! Models come from what the CLI reports, never from a hardcoded list.
 
-use acp_bridge::acp::AcpClient;
-use acp_bridge::session::Driver;
+use gray_acp::acp::AcpClient;
+use gray_acp::session::Driver;
 use serde_json::{json, Value};
 
 use crate::driver::CopilotDriver;

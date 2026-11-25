@@ -2,10 +2,10 @@
 //! a source guard that fails if an internal endpoint or a spoofed editor
 //! identity ever comes back.
 
-use acp_bridge::session::{Driver, PermissionDecision};
 use copilot_sub::driver::CopilotDriver;
 use copilot_sub::models::{extract_models, is_auth_error, model_rows};
 use copilot_sub::setup;
+use gray_acp::session::{Driver, PermissionDecision};
 use serde_json::json;
 
 #[test]

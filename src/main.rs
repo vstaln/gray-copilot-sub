@@ -12,12 +12,12 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use acp_bridge::manifest as pmanifest;
-use acp_bridge::relay::{self, Intents, TurnFn};
-use acp_bridge::session::{self, Pool};
 use copilot_sub::driver::CopilotDriver;
 use copilot_sub::models::{self, Probe};
 use copilot_sub::{setup, usage};
+use gray_acp::manifest as pmanifest;
+use gray_acp::relay::{self, Intents, TurnFn};
+use gray_acp::session::{self, Pool};
 use serde_json::{json, Value};
 
 const NAME: &str = "copilot";
